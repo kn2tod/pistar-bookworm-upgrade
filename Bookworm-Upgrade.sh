@@ -8,8 +8,8 @@
 #      remove obsolete cmdline.txt options; fix incorrect fstab options
 #   2) remove UI option from APT packages; update APT packages to point to Bookworm archives
 #   3) run the update/upgrade APT process
-#   4) install PHP/FPM 8.2 (prior versions removed during upgrade?)
-#   7) apply some minor fixes (broken in original installation or during upgrade)
+#   4) install PHP/FPM 8.2
+#   5) apply some minor fixes (broken in original installation or during upgrade)
 #
 # Assumptions:
 #   Starting from a current Raspbian/Pi-Star BULLSEYE system: all applicable updates applied
@@ -93,8 +93,6 @@ echo "==="
 cat /boot/cmdline.txt
 echo "==="
 cat /etc/fstab
-echo "==="
-ls -la /etc/resolv.conf
 #
 read -p "-- press any key to continue --" ipq
 #
@@ -139,59 +137,31 @@ echo "==="
 cat /etc/apt/sources.list
 echo "==="
 cat /etc/apt/sources.list.d/raspi.list
-echo "==="
-#cat /lib/systemd/system/dhcpcd.service
-#echo "==="
-#cat /etc/systemd/system/dhcpcd.service.d/wait.conf
-#echo "==="
-#ls -la /etc/resolv.conf
-#sudo cp -p /etc/resolv.conf /home/pi-star/resolv.conf.sav
-#
 # ===========================================================================================================
 read -p "-- press any key to continue --" ipq
 echo "===============================> Start OS update"
-#sudo apt-mark hold dhcpcd5    # add per: https://github.com/pi-hole/pi-hole/issues/4051  ???
-# ref: https://forums.raspberrypi.com/viewtopic.php?t=320383 DHCPCD problem:
-# ref: https://blog.riton.fr/en-us/2021/10/raspberry-pi-dhcpcd-upgrade-break-raspbian-bullseye-network/
-#echo "==="
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 sudo apt update -y $q  # -q? -qq?
-#echo "==="
-#cat /lib/systemd/system/dhcpcd.service
 read -p "-- press any key to continue --" ipq
 echo "===============================> Start OS upgrade"
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 #sudo apt upgrade --without-new-pkgs -y $q                 # reply "N" for all; -q? -qq?
-sudo apt upgrade --without-new-pkgs --fix-missing --fix-broken -y $q                 # reply "N" for all; -q? -qq?
+sudo apt upgrade --without-new-pkgs --fix-missing --fix-broken -y $q   # reply "N" for all; -q? -qq?
 echo "==="
-#cat /lib/systemd/system/dhcpcd.service
-#echo "==="
-#cat /etc/systemd/system/dhcpcd.service.d/wait.conf
-#
 echo "--Half-way there!"
 read -p "--Complete upgrade? (Y/n)? " ipq
 if [ "$ipq" == "Y" ]; then                 #  ${ipq^^}?
-#
-#echo "==="
-#ls -la /etc/resolv.conf
-#sudo ln -sf /var/lib/dhcpcd/resolv.conf /etc/resolv.conf
-#sudo mkdir /var/lib/dhcpcd
-#sudo cp /home/pi-star/resolv.conf.sav /var/lib/dhcpcd/resolv.conf
-#sudo systemctl daemon-reload
-#sudo systemctl restart dhcpcd.service
-#echo "==="
-#ls -la /etc/resolv.conf
 #
 #read -p "-- press any key to continue --" ipq
 echo "===============================> Finish upgrade:"
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 #sudo apt full-upgrade -y $q                 # reply "N" for all; tab-OK for all; -q? -qq?
-sudo apt full-upgrade --fix-missing --fix-broken-y $q                 # reply "N" for all; tab-OK for all; -q? -qq?
+sudo apt full-upgrade --fix-missing --fix-broken -y $q      # reply "N" for all; tab-OK for all; -q? -qq?
 read -p "-- press any key to continue --" ipq
 #
 echo "===============================> Cleanup:"
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
-sudo apt autoremove -y
+sudo apt autoremove -y                                      # maybe do this later?
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 sudo apt clean
 #
@@ -202,14 +172,15 @@ if [ ! -x /usr/bin/php8.2 ]; then
 # ref: https://www.linuxcapable.com/how-to-install-php-7-4-on-debian-11-bullseye/
 # ref: https://www.techrepublic.com/article/how-to-add-php-fpm-support-for-nginx-sites/
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
-sudo apt install php8.2          -y
-sudo apt install php8.2-fpm      -y
+#sudo apt install php8.2         -y
 sudo apt install php8.2-cli      -y
+sudo apt install php8.2-fpm      -y
+#sudo apt install php8.2-json    -y            # ???
 sudo apt install php8.2-mbstring -y
 sudo apt install php8.2-zip      -y
 #
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
-sudo sed -i "s/php7.4-/php8.2-/g" /etc/nginx/default.d/php.conf
+sudo sed -i "s/php7.4-/php8.2-/g" /etc/nginx/default.d/php.conf   # assumes prior version is 7.4
 echo "==="
 cat /etc/nginx/default.d/php.conf
 echo "==="
@@ -231,7 +202,7 @@ sudo systemctl restart php8.2-fpm      # restart just-in-case
 echo "==="
 php --version                          # list current version info
 echo "==="
-pstree
+#pstree
 read -p "-- press any key to continue --" ipq
 echo "==============================> Re-install python2:"
 #sudo apt install python -y
@@ -240,17 +211,6 @@ echo "==============================> Re-install python2:"
 #sudo ln -fs /usr/bin/python3.9 /usr/bin/python    #  link generic python to 3.9
 #sudo ln -fs /usr/bin/python3.11 /usr/bin/python   #  link generic python to 3.11
 #
-#sudo sed -i 's/ ConfigParser/ configparser/g' /usr/local/sbin/pistar-watchdog
-#sudo sed -i 's/ ConfigParser/ configparser/g' /usr/local/sbin/pistar-remote
-#
-#sudo sed -i 's/^\x20\{8\}/\t/g'               /usr/local/sbin/pistar-watchdog
-#sudo sed -i 's/^\x20\{8\}/\t/g'               /usr/local/sbin/pistar-remote
-#sudo sed -i 's/^\x20\{8\}/\t/g'               /usr/local/sbin/pistar-keeper
-#
-#sudo sed -i '20,$ s/\x20\{8\}/\t/g'           /usr/local/sbin/pistar-watchdog
-#sudo sed -i '20,$ s/\x20\{8\}/\t/g'           /usr/local/sbin/pistar-remote
-#
-#sudo sed -i 's/if "in checkprocremote:/in checkprocremote.decode():/g' pistar-watchdog
 sudo python --version
 #
 # https://forums.raspberrypi.com/viewtopic.php?t=323583:
@@ -288,7 +248,7 @@ sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 cd /boot
 f=$(hostname).gen.txt
 m1=$(tac $(ls -1t /var/log/pi-star/MMDVM-*.log 2>/dev/null) /dev/null | grep "protocol" -m 1 | sed -n "s|.*\(v[0-9]*\x2e[0-9]*\x2e[0-9]*\).*|\1|p")
-m2=$(sed -n "/\[Modem\]/{n;p;}" /etc/dstar-radio.mmdvmhost | awk -F "=" '/Hardware/ {print $2}')
+m2=$(sed -n "/\[Modem\]/{n;p;}" /etc/dstar-radio.mmdvmhost 2>/dev/null | awk -F "=" '/Hardware/ {print $2}')
 m3=$(hostnamectl 2>/dev/null | sed -n "s/.* System: .* (\([a-zA-Z0-9]*\))/\u\1/p")
 #
 sudo echo "Modified: $(date +%Y-%m-%d" "%H:%M:%S)" > $f
@@ -296,7 +256,6 @@ sudo echo "Software: $(sed -n 's|$version = \x27\([0-9]\{4\}\)\([0-9][0-9]\)\([0
 sudo echo "Hardware: ($(sed -n 's|^Model.*: Raspberry \(.*\)|\1|p' /proc/cpuinfo | sed 's/ Model //g' | sed 's/ Plus/+/g')) - Modem: $m1 ($m2) - Disk: ("$(blkid | sed -n 's/\/dev\/\(.*2\):.*/\1/p')")" >> $f
 cat $f
 #
-#sudo mkdir /home/pi-star/.config      # deleted during update?!?
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 sudo sed -i '/cron.daily/,/^mount/ s/mount -o remount,ro \/$/& || true/g' /etc/rc.local  # make sure script completes all steps
 #
@@ -309,21 +268,11 @@ sudo sed -i 's/ExecStartPost=\//ExecStartPost=-\//g' /etc/systemd/system/apt-dai
 sudo systemctl daemon-reload
 #
 #<https://unix.stackexchange.com/questions/633370/bash-needs-another-newline-to-execute-pasted-lines>
-echo set enable-bracketed-paste off >> /home/pi-star/.
+echo set enable-bracketed-paste off >> /home/pi-star/.inputrc
 sudo chown pi-star:pi-star /home/pi-star
 #
 #--------------------------------------------------------------------------
 read -p "-- press any key to continue --" ipq
-#sudo apt-mark unhold dhcpcd5
-#sudo umount /var/lib/dhcpcd5
-#sudo apt upgrade -y
-#sudo sed -i 's/^tmpfs\(.*\)\/var\/lib\/dhcpcd5\(.*\)/#tmpfs\1\/var\/lib\/dhcpcd5\2/g' /etc/fstab  # ????
-#sudo sed -i 's/\/var\/lib\/dhcpcd5/\/var\/lib\/dhcpcd\t/g' /etc/fstab
-#echo "==="
-#cat /lib/systemd/system/dhcpcd.service
-#echo "==="
-#cat /etc/systemd/system/dhcpcd.service.d/wait.conf
-#
 sudo cp /etc/apt/trusted.gpg /etc/apt/trusted.gpg.d
 # NANO deprecations in bookworm:
 sudo sed -i 's/include.*mutt.nanorc/#&/g'   /etc/nanorc
@@ -340,7 +289,11 @@ sudo apt install bat  -y
 #sudo sed -i 's/KillMode=none/KillMode=mixed/g' /lib/systemd/system/plymouth-start.service
 #sudo systemctl daemon-reload
 #
-sudo touch -m --date="2020-01-20" /etc/fstab                                    # ?????
+sudo touch -m --date="2020-01-20" /etc/fstab                                     # ?????
+# ref: <https://dev1galaxy.org/viewtopic.php?id=4966>
+#sudo rm /home/pi-star/.sudo_as_admin_successful                                 # !!!???!!!
+echo -e "# Disable ~/.sudo_as_admin_successful file\nDefaults \!admin_flag" > /tmp/disable_admin_file_in_home
+sudo cp /tmp/disable_admin_file_in_home /etc/sudoers.d
 #
 echo "==============================> End of Bullseye-Bookworm upgrade"
 t2=$SECONDS
@@ -371,30 +324,30 @@ fi
 #
 # -- misc installation notes
 # log of responses:
-#  1) response during "upgrade w/o new pkgs":
-#    etc/sudoers             80% progress
-#    etc/nanorc              82%
-#    etc/logrotate.conf      90%
-#    etc/default/rcS         90%
+#  1) responses during "upgrade w/o new pkgs":
+#    etc/issues              ??% progress
+#    etc/dnsmasq.conf        95%
 #
 #  2) responses during "full-upgrade":
-#    etc/default/useradd     23% 
-#    etc/logrotate.d/rsyslog 63%
-#    etc/rsyslog.conf        63%
-#    etc/nginx/nginx.conf    63%
+#    etc/login.defs           8% progress
+#    etc/default/useradd     28%
+#    etc/crontab             30%
+#    etc/logrotate.d/rsyslog 65%
+#    etc/rsyslog.conf        65%
+#    etc/nginx/nginx.conf    66%
+#    etc/sudoers             71%
+#    etc/nanorc              74%
+#    TAB-OK: /tmp... --> etc/ssh/ssh.conf  91%
+#    etc/ntpsec/ntp.conf     97%
+#    etc/init.d/nmbd         98%
+#    etc/init.d/smbd         98%
+#
+#   ?) old responses:
 #    TAB-OK: run/samba/upgrades/smb.conf
-#    etc/default/dnsmasq     65%
-#    etc/dnsmasq.conf        65%
-#    etc/logrotate.d/exim4-base        80%
-#    etc/logrotate.d/exim4-paniclog    80%
-#    etc/sysctl.conf                   85%
-#    TAB-OK: /tmp... --> etc/ssh/ssh.conf
 #    TAB-OK: /usr/share/unattended-upgrades/50unattended-upgrades (cmt chg only?)
 #    etc/cups/cups-browsed.conf  (only if installed)
-#    etc/init.d/nmbd         99%
-#    etc/init.d/smbd         99%
 #
 # Example boot doc:
-#   Modified: 2022-06-05 10:35:19
-#   Software: 2022/05/12  Ver: 4.1.6  Bullseye: 11.3  Kernel: 5.15.32-v7l+
-#   Hardware: (Pi 4B Rev 1.1) - Modem:  () - Disk: (sda2)
+#   Modified: 2023-09-17 20:54:51
+#   Software: 2023/07/13  Ver: 4.1.6  Bookworm: 12.1  Kernel: 6.1.21-v8+
+#   Hardware: (Pi 4B Rev 1.5) - Modem:  () - Disk: (sda2)
