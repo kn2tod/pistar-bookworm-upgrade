@@ -74,6 +74,8 @@ fi
 sudo sed -i 's/ elevator=deadline / /g' /boot/cmdline.txt     # remove: no longer in use/supported
 sudo sed -i 's/ noswap / /g' /boot/cmdline.txt                # remove: unknown kernel param
 #sudo sed -i 's/.*$/& net.ifnames=0 biosdevname=0/g' /boot/cmdline.txt  # ref: <https://michlstechblog.info/blog/linux-disable-assignment-of-new-names-for-network-interfaces/>
+#sudo sed -i 's/.*$/& net.ifnames=0/g' /boot/cmdline.txt  # ref: <https://michlstechblog.info/blog/linux-disable-assignment-of-new-names-for-network-interfaces/>
+sudo sed -i 's/=force rootwait/=force net.ifnames=0 rootwait/g' /boot/cmdline.txt  # ref: <https://michlstechblog.info/blog/linux-disable-assignment-of-new-names-for-network-interfaces/>
 sudo sed -i '/^tmpfs.*\/sys\/fs\/cgroup/,1 {s/,mode=1755,size=32m/\t\t/g}' /etc/fstab  # mode,size not allowed?
 #
 read -p "-- press any key to continue --" ipq
@@ -172,7 +174,7 @@ if [ ! -x /usr/bin/php8.2 ]; then
 # ref: https://www.linuxcapable.com/how-to-install-php-7-4-on-debian-11-bullseye/
 # ref: https://www.techrepublic.com/article/how-to-add-php-fpm-support-for-nginx-sites/
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
-#sudo apt install php8.2         -y
+#sudo apt install php8.2         -y            # skip: don't need APACHE2 installed
 sudo apt install php8.2-cli      -y
 sudo apt install php8.2-fpm      -y
 #sudo apt install php8.2-json    -y            # ???
@@ -181,6 +183,7 @@ sudo apt install php8.2-zip      -y
 #
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
 sudo sed -i "s/php7.4-/php8.2-/g" /etc/nginx/default.d/php.conf   # assumes prior version is 7.4
+#
 echo "==="
 cat /etc/nginx/default.d/php.conf
 echo "==="
@@ -196,6 +199,10 @@ if ! [ $(cat /lib/systemd/system/nginx.service | grep -o "mkdir") ]; then
 fi
 echo "==="
 sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot
+#
+sudo sed -i 's/^worker_processes 4;/#&\work_processes auto;/g'                        /etc/nginx/nginx.conf
+sudo sed -i 's/^\t\(ssl_.*TLSv1.2\); \(# Drop.*\)/\t#\1; \2\n\t\1 TLSv1.3; \2/g'      /etc/nginx/nginx.conf
+#
 sudo nginx -t                          # config check
 sudo systemctl restart nginx           # restart just-in-case
 sudo systemctl restart php8.2-fpm      # restart just-in-case
@@ -280,20 +287,23 @@ sudo sed -i 's/include.*gentoo.nanorc/#&/g' /etc/nanorc
 sudo sed -i 's/include.*pov.nanorc/#&/g'    /etc/nanorc
 sudo sed -i 's/set suspend/#&/g'            /etc/nanorc
 #
-sudo apt install htop -y
-sudo apt install lsof -y
-sudo apt install bat  -y
-# sudo apt install procinfo ntpstat ntpdate ntptime sysstat nmap lshw pydf
+sudo apt install htop     -y
+sudo apt install lsof     -y
+sudo apt install bat      -y
+sudo apt install dnsutils -y
+sudo apt install nptdate  -y
+# sudo apt install ascii procinfo ntpstat ntpdate ntptime sysstat nmap lshw pydf neofetch
 #
 #sudo systemctl cat plymouth-start.service
 #sudo sed -i 's/KillMode=none/KillMode=mixed/g' /lib/systemd/system/plymouth-start.service
 #sudo systemctl daemon-reload
 #
 sudo touch -m --date="2020-01-20" /etc/fstab                                     # ?????
+#
 # ref: <https://dev1galaxy.org/viewtopic.php?id=4966>
-#sudo rm /home/pi-star/.sudo_as_admin_successful                                 # !!!???!!!
-echo -e "# Disable ~/.sudo_as_admin_successful file\nDefaults \!admin_flag" > /tmp/disable_admin_file_in_home
+echo -e "# Disable ~/.sudo_as_admin_successful file\nDefaults \x21admin_flag" > /tmp/disable_admin_file_in_home
 sudo cp /tmp/disable_admin_file_in_home /etc/sudoers.d
+sudo rm /home/pi-star/.sudo_as_admin_successful                                 # !!!???!!!
 #
 echo "==============================> End of Bullseye-Bookworm upgrade"
 t2=$SECONDS
@@ -317,7 +327,7 @@ fi
 #
 # ===========================================================================================================
 # Some usefull items to consider as part of base:
-#sudo apt install ethtool ascii htop lsof procinfo tree ntpstat ntpdate ntptime sysstat nmap lsb-release dnsutils lshw pydf bat
+#sudo apt install ethtool ascii htop lsof procinfo tree ntpstat ntpdate ntptime sysstat nmap lsb-release dnsutils lshw pydf bat jq duf
 #
 #sudo apt-mark showhold
 #sudo dpkg --get-selections | grep 'hold$'
